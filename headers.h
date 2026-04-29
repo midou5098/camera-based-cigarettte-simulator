@@ -321,7 +321,7 @@ void uinter::layout(int mode){
                 burning =true;
             }
             SDL_Rect cigar={450,190,400,600};
-            SDL_Rect cigar2={445,170,410,600};
+            SDL_Rect cigar2={440,170,420,600};
             switch(chooice){
                 case 1 :{
                     SDL_RenderCopy(sdl.getrenderer(),marlboro_m,NULL,&cigar);
@@ -334,9 +334,17 @@ void uinter::layout(int mode){
                         sdl.drawtext(300,100,"its swweet isnt it , want another one :3 ?",true);
                     }
                     break;}
-                case 2 :
+                case 2 :{
                     SDL_RenderCopy(sdl.getrenderer(),oris_m,NULL,&cigar);
-                    break;
+                    SDL_Rect ash={445,110,410,fy-59};
+                    SDL_RenderSetClipRect(sdl.getrenderer(), &ash);
+                    SDL_RenderCopy(sdl.getrenderer(), marl_smoked, NULL, &cigar2);
+                    SDL_RenderSetClipRect(sdl.getrenderer(), NULL);
+                    animate(620,fy,60,100);
+                    if(!burning){
+                        sdl.drawtext(300,100,"its swweet isnt it , want another one :3 ?",true);
+                    }
+                    break;}
                 case 3 :
                     SDL_RenderCopy(sdl.getrenderer(),cuba_m,NULL,&cigar);
                     break;

@@ -26,12 +26,13 @@ class SDLinit{
         SDL_Renderer* renderer;
         TTF_Font* font;
         TTF_Font* font2;
+        TTF_Font* font3;
     public:
         SDLinit(std::string title,int w,int h);
         ~SDLinit();
         void clear(int *mode);
         void present();
-        void drawtext(int x,int y,const std::string &text,bool ch);
+        void drawtext(int x,int y,const std::string &text,bool ch,int type);
         void drawbut(int x,int y,int w,int h,int r,int g,int b,const std::string &text);
         SDL_Renderer* getrenderer(){return renderer;}
         
@@ -46,6 +47,7 @@ SDLinit::SDLinit(std::string title,int w,int h){
     TTF_Init();
     font=TTF_OpenFont("font.ttf",25);
     font2=TTF_OpenFont("font2.ttf",40);
+    font3=TTF_OpenFont("font.otf",30);
     window=SDL_CreateWindow(title.c_str(),SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,w,h,SDL_WINDOW_SHOWN);
     renderer=SDL_CreateRenderer(window,-1,SDL_RENDERER_ACCELERATED);
 }
@@ -67,7 +69,7 @@ void SDLinit::clear(int *mode){
 void SDLinit::present(){
     SDL_RenderPresent(renderer);
 }
-void SDLinit::drawtext(int x,int y,const std::string &text,bool ch){
+void SDLinit::drawtext(int x,int y,const std::string &text,bool ch,int type){
     SDL_Color textColor;
     switch(ch){
         case true:
@@ -77,7 +79,12 @@ void SDLinit::drawtext(int x,int y,const std::string &text,bool ch){
             textColor = {130, 60, 25, 255};
 
     }
-    SDL_Surface* surf=TTF_RenderText_Solid(font,text.c_str(),textColor);
+    SDL_Surface* surf; 
+    if(type==1){
+        surf=TTF_RenderText_Solid(font,text.c_str(),textColor);
+    }else{
+        surf=TTF_RenderText_Solid(font3,text.c_str(),textColor);
+    }
     int tw = surf->w;
     int th = surf->h;
     SDL_Texture* tex=SDL_CreateTextureFromSurface(renderer,surf);
@@ -146,6 +153,7 @@ class uinter{
         SDL_Texture* cuba_m;
         SDL_Texture* fire;
         SDL_Texture* marl_smoked;
+        SDL_Texture* cuba_smoked;
         int chooice=0;
         int COLS=6,ROWS=6;
         int current_frame=0;
@@ -197,6 +205,9 @@ uinter::uinter(SDLinit &osdl) : sdl(osdl){
 
     SDL_Surface* marl_sm=IMG_Load("assets/marl_smo.png");
     marl_smoked=SDL_CreateTextureFromSurface(sdl.getrenderer(),marl_sm);
+    SDL_FreeSurface(marl_sm);
+    SDL_Surface* cuba_sm=IMG_Load("assets/cuba_smo.png");
+    cuba_smoked=SDL_CreateTextureFromSurface(sdl.getrenderer(),cuba_sm);
     SDL_FreeSurface(marl_sm);
 
 
@@ -262,13 +273,16 @@ void uinter::handle(SDL_Event event,int* mode){
         SDL_Keycode key=event.key.keysym.sym;
         if(key==SDLK_ESCAPE && mode!=0){
             *mode=0;
+            fy=229;
+            burning=false;
         }else if(key==SDLK_i){
             if(burning){minus();}
         }
     
 
     }else if (event.type==SDL_MOUSEBUTTONDOWN){
-        if(*mode==0){
+        if (event.button.button==SDL_BUTTON_LEFT){
+            if(*mode==0){
             int mx=event.button.x;
             int my=event.button.y;
             if(mouse(875,70,370,50,mx,my)){
@@ -280,9 +294,18 @@ void uinter::handle(SDL_Event event,int* mode){
             }else if (mouse (540,500,200,100,mx,my) && chooice!=0){
                 *mode=1;
             }
+            }
+        else{
+            int mx=event.button.x;
+            int my=event.button.y;
+            if (mouse(980,100,100,50,mx,my) && !burning){
+                *mode=0;
+                fy=229;
+                burning=false;
         }
        
     }
+        }}
 
 }
 bool uinter::mouse(int x,int y,int w,int h,int mx,int my){
@@ -300,16 +323,16 @@ void uinter::layout(int mode){
         case 0 :{
             SDL_Rect mar={830,-50,500,300};
             SDL_RenderCopy(sdl.getrenderer(),marlboro,NULL,&mar);
-            sdl.drawtext(700,90,"marlboro red",chooice==1);
+            sdl.drawtext(700,90,"marlboro red",chooice==1,1);
 
 
             SDL_Rect ories={810,70,530,300};
             SDL_RenderCopy(sdl.getrenderer(),oris,NULL,&ories);
-            sdl.drawtext(700,205,"oris(for bitches) ",chooice==2);
+            sdl.drawtext(700,205,"oris(for bitches) ",chooice==2,1);
 
             SDL_Rect cubas={810,190,480,250};
             SDL_RenderCopy(sdl.getrenderer(),cuba,NULL,&cubas);
-            sdl.drawtext(700,310,"cuban cigars ",chooice==3);
+            sdl.drawtext(700,310,"cuban cigars ",chooice==3,1);
 
 
             sdl.drawbut(540,500,200,100,245, 230, 211,"smoke !");
@@ -331,22 +354,36 @@ void uinter::layout(int mode){
                     SDL_RenderSetClipRect(sdl.getrenderer(), NULL);
                     animate(620,fy,60,100);
                     if(!burning){
-                        sdl.drawtext(300,100,"its swweet isnt it , want another one :3 ?",true);
+                        sdl.drawtext(300,100,"its swweet isnt it , want another one :3 ?",true,0);
+                        sdl.drawbut(980,100,100,50,160, 230, 187,"YESSS!");
                     }
+                    
                     break;}
                 case 2 :{
                     SDL_RenderCopy(sdl.getrenderer(),oris_m,NULL,&cigar);
                     SDL_Rect ash={445,110,410,fy-59};
+                    SDL_Rect cigar2={435,170,430,600};
                     SDL_RenderSetClipRect(sdl.getrenderer(), &ash);
                     SDL_RenderCopy(sdl.getrenderer(), marl_smoked, NULL, &cigar2);
                     SDL_RenderSetClipRect(sdl.getrenderer(), NULL);
                     animate(620,fy,60,100);
                     if(!burning){
-                        sdl.drawtext(300,100,"its swweet isnt it , want another one :3 ?",true);
+                        sdl.drawtext(300,100,"its swweet isnt it , want another one :3 ?",true,0);
+                        sdl.drawbut(980,100,100,50,160, 230, 187,"YESSS!");
                     }
                     break;}
                 case 3 :
                     SDL_RenderCopy(sdl.getrenderer(),cuba_m,NULL,&cigar);
+                    SDL_Rect ash={445,110,410,fy-92};
+                    SDL_RenderSetClipRect(sdl.getrenderer(), &ash);
+                    SDL_RenderCopy(sdl.getrenderer(), cuba_smoked, NULL, &cigar2);
+                    SDL_RenderSetClipRect(sdl.getrenderer(), NULL);
+                    animate(597,fy-30,107,100);
+                    if(!burning){
+                        sdl.drawbut(980,100,100,50,160, 230, 187,"YESSS!");
+                        sdl.drawtext(300,100,"its swweet isnt it , want another one :3 ?",true,0);
+                    }
+                    
                     break;
                 }
         

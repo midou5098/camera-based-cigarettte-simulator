@@ -1,198 +1,115 @@
-🚬 Gesture Controlled Cigarette Simulation
+# Gesture-Controlled Cigarette Simulator
 
-An interactive desktop simulation built with Python, MediaPipe, OpenCV, and C++/SDL2 that uses real-time hand gesture recognition to control a virtual cigarette burning animation.
+A desktop experiment that connects real-time hand tracking to an SDL2 animation. A Python MediaPipe/OpenCV process detects whether the user's hand is open or closed, writes that state to `state.txt`, and the C++ SDL application uses it to advance a cigarette burn animation.
 
-The application tracks whether the user's hand is open or closed through webcam input and maps that state to a smoking simulation rendered in SDL.
+## Features
 
----
+- Webcam hand tracking with MediaPipe Hands.
+- Open/closed hand classification from finger landmarks.
+- Python-to-C++ communication through a lightweight shared text file.
+- SDL2 menu for selecting a cigarette type.
+- Animated flame sprite sheet.
+- Progressive burn/ash reveal using SDL clipping rectangles.
+- Manual keyboard fallback for advancing the burn.
+- Multiple textured cigarette assets.
 
-🚀 Features
+## Tech Stack
 
-- ✋ Real-Time Hand Gesture Detection
-  
-  - Webcam tracking using OpenCV
-  - Hand landmark recognition via MediaPipe
-  - Detects open vs closed palm states
+| Layer | Technology |
+| --- | --- |
+| Simulation | C++, SDL2, SDL2_image, SDL2_ttf, SDL2_gfx |
+| Gesture detection | Python, OpenCV, MediaPipe |
+| IPC | `state.txt` file polling |
 
-- 🔄 Python ↔ C++ Communication
-  
-  - Python writes hand state ("1" or "0") into a shared text file
-  - C++ SDL engine continuously reads this state
-  - Creates a lightweight IPC bridge between both runtimes
+## Project Structure
 
-- 🚬 Interactive Cigarette Burn System
-  
-  - Multiple cigarette brand selections
-  - Animated flame sprite sheet
-  - Burn progression controlled by hand opening gesture
+```text
+.
+|-- main.cpp          # SDL application entry point and render loop
+|-- headers.h         # SDL wrapper, UI, texture loading, gesture state polling, animation logic
+|-- app.py            # MediaPipe/OpenCV hand detector
+|-- state.txt         # Runtime state bridge: 1=open, 0=closed
+|-- assets/           # Cigarette textures, smoked overlays, flame sprite sheet
+|-- font.ttf          # UI font
+|-- font2.ttf         # UI font
+|-- font.otf          # UI font
+|-- venv311/          # Local Python environment artifact
+`-- output/main       # Existing compiled binary artifact
+```
 
-- 🎨 SDL2 Visual Interface
-  
-  - Custom textured assets
-  - Dynamic clipping for ash/burn reveal
-  - Menu system and interaction logic
+## Gesture State
 
----
+`app.py` writes one of two values to `state.txt`:
 
-🧠 How It Works
+| Value | Meaning |
+| --- | --- |
+| `1` | Open hand detected. |
+| `0` | Closed hand or no open-hand state detected. |
 
-1. Hand Tracking Layer (Python)
+The SDL app reads this file during `uinter::update()`. When the cigarette is burning and the file contains `1`, the burn position advances over time.
 
-Using MediaPipe Hands, the webcam feed is analyzed frame by frame:
+## Install Python Dependencies
 
-- Finger landmarks are checked
-- Thumb openness is verified
-- If at least 3 fingers + thumb are extended → hand = "opened"
-- Otherwise → hand = "closed"
+```bash
+python3 -m venv venv311
+source venv311/bin/activate
+pip install opencv-python mediapipe
+```
 
-The resulting state is written to:
+## Build C++ App
 
-state.txt
+Install SDL dependencies on Ubuntu/Debian:
 
-where:
+```bash
+sudo apt install build-essential libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev libsdl2-gfx-dev
+```
 
-- "1" = open hand
-- "0" = closed hand
+Compile from the repository root:
 
-To reduce unnecessary disk writes, updates are throttled every "0.1s".
+```bash
+g++ main.cpp -o cigarette-simulator \
+  -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_gfx -std=c++17
+```
 
----
+## Run
 
-2. Simulation Layer (C++ / SDL2)
+Start the gesture detector in one terminal:
 
-The SDL application polls "state.txt" continuously:
+```bash
+python app.py
+```
 
-- If hand state = "1"
-- and cigarette is currently burning
+Start the SDL simulator in another terminal:
 
-the cigarette ash advances downward frame by frame.
+```bash
+./cigarette-simulator
+```
 
-This creates the illusion that the cigarette is being "pulled" or consumed in response to the user's gesture.
+Run both from the repository root so `state.txt`, fonts, and assets resolve correctly.
 
----
+## Controls
 
-3. Burn Animation
+| Input | Action |
+| --- | --- |
+| Mouse click | Select a cigarette type. |
+| `smoke !` button | Start the simulation. |
+| Open hand | Advance the burn while the gesture detector is running. |
+| `I` | Manual burn advance fallback. |
+| `Esc` | Return to the selection menu. |
 
-The cigarette consists of:
+## How It Works
 
-- static cigarette texture
-- smoked overlay texture
-- clipping rectangle to reveal consumed section
-- animated fire sprite
+The visual effect is built from three layers:
 
-Burn progression variable:
+1. The base cigarette texture.
+2. A smoked/ash overlay texture.
+3. An animated flame sprite sheet.
 
-fy
+The variable `fy` controls both the flame position and the clipping rectangle used to reveal more of the smoked overlay. As the hand detector reports an open hand, `fy` increases, making the burn progress downward.
 
-controls:
+## Known Limitations
 
-- flame Y position
-- ash reveal clipping
-- completion state
-
----
-
-🛠️ Tech Stack
-
-Python Side
-
-- OpenCV
-- MediaPipe
-- time
-
-C++ Side
-
-- SDL2
-- SDL2_ttf
-- SDL2_image
-- SDL2_gfx
-
----
-
-📦 Build & Run
-
-Step 1 — Run gesture detector
-
-python detector.py
-
-This starts webcam tracking and updates "state.txt".
-
----
-
-Step 2 — Build SDL simulation
-
-g++ main.cpp -o smoke \
--lSDL2 -lSDL2_ttf -lSDL2_image -lSDL2_gfx
-
----
-
-Step 3 — Launch simulation
-
-./smoke
-
----
-
-🎮 Controls
-
-Input| Action
-Mouse Click| Select cigarette type
-Smoke Button| Start simulation
-Open Hand| Progress burn
-ESC| Return to menu
-
----
-
-🧩 Project Structure
-
-detector.py      -> MediaPipe hand tracker
-main.cpp         -> SDL application entry
-headers.h        -> UI / animation / logic
-state.txt        -> runtime communication bridge
-assets/          -> textures and sprite sheets
-
----
-
-⚙️ Technical Highlights
-
-- Cross-language runtime synchronization
-- Basic interprocess communication without sockets/pipes
-- Hand landmark boolean gesture classification
-- Sprite animation management
-- Texture clipping for progressive burn illusion
-
----
-
-⚠️ Known Limitations
-
-- Uses file polling for communication (not optimal but simple)
-- Webcam gesture recognition can fluctuate under poor lighting
-- Single gesture type only (open/closed)
-
----
-
-🔮 Future Improvements
-
-- Replace text-file bridge with sockets/shared memory
-- Add inhale/exhale smoke particles
-- Add multiple gesture commands
-- Improve burn realism
-- Add sound effects / ember glow
-
----
-
-📌 Purpose
-
-This project was built as an experiment in combining:
-
-- computer vision
-- gesture recognition
-- SDL animation
-- cross-language interaction
-
-into one responsive real-time desktop simulation.
-
----
-
-📜 License
-
-Free to use and modify.
+- File polling works for a prototype but is less robust than sockets, pipes, or shared memory.
+- Webcam recognition depends on lighting and camera quality.
+- The detector must be launched separately from the SDL app.
+- Window size and UI positions are fixed.
